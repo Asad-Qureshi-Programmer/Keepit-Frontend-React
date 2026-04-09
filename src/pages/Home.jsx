@@ -14,6 +14,7 @@ import { IoClose,IoCheckmark, IoShareSocialOutline, IoCopy } from 'react-icons/i
 import { FaShareAlt } from "react-icons/fa";
 import { useSearch } from "../contexts/SearchContext";
 import {getMatchScore}  from "../utils/searchUtils";
+import { useLongPress } from "../hooks/useLongPress";
 
 export const handleDownloadFile = async (fileId, filename, filepath, e) => {
     e.stopPropagation();
@@ -89,6 +90,16 @@ const Home = () => {
   const [showFullView, setShowFullView] = useState({});
   const navigate = useNavigate();
    const fileInput = useRef(null)
+
+  const isMobile = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  const folderLongPress = useLongPress((e) => {
+  if (isMobile()) handleCheckedFolders(e, folder);
+});
+
+  const fileLongPress = useLongPress((e) => {
+  if (isMobile()) handleCheckedFiles(e, file);
+});
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -609,13 +620,27 @@ const Home = () => {
       return (
         <div
           key={i}
+          {...folderLongPress}
           className={`group relative flex flex-col justify-center items-center px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 w-[140px] h-fit
             ${isSelected 
               ? 'bg-blue-50 ring-2 ring-blue-500 shadow-lg scale-105' 
               : 'bg-white hover:bg-gray-50 hover:shadow-md border border-gray-200 hover:border-gray-300'
             }`}
-          onClick={(e) => handleCheckedFolders(e, folder)}
-          onDoubleClick={() => navigate(`folder/${folder._id}`, { state: folder })}
+          onClick={(e) => {
+            if (isMobile()) {
+        // Mobile: Single click opens
+        navigate(`folder/${folder._id}`, { state: folder });
+      } else {
+        // Desktop: Single click selects
+        handleCheckedFolders(e, folder);
+      }
+          }}
+          onDoubleClick={() => {
+      if (!isMobile()) {
+        // Desktop: Double click opens
+        navigate(`folder/${folder._id}`, { state: folder });
+      }
+    }}
         >
           {/* Selection Checkbox Indicator - Top Left */}
           <div className="absolute top-2 left-2 z-10">
@@ -752,12 +777,25 @@ const Home = () => {
       return (
         <React.Fragment key={file.path}>
           <div
-            onClick={(e) => handleCheckedFiles(e, file)}
-            onDoubleClick={() =>
-              setShowFullView((prev) => ({
-                ...prev,
-                [file.path]: true,
-              }))
+          {...fileLongPress}
+            onDoubleClick={() => {
+                  if (!isMobile()){
+                    setShowFullView((prev) => ({
+                      ...prev,
+                      [file.path]: true,
+                    }))
+                  }
+                }}
+            onClick={(e) => {
+                if (isMobile()) {
+                  setShowFullView((prev) => ({
+                          ...prev,
+                          [file.path]: true,
+                        }))
+                } else {
+                  handleCheckedFiles(e, file);
+                }
+              }
             }
             className={`group relative rounded-xl border-2 transition-all duration-200 cursor-pointer h-fit w-[250px] overflow-hidden
               ${isSelected 
@@ -765,7 +803,7 @@ const Home = () => {
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
               }`}
           >
-            
+          
 
             {/* Action Buttons - Show on Hover */}
             <div className="absolute top-3 right-3 z-20 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
