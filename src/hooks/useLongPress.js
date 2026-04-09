@@ -5,10 +5,13 @@ import { useState } from "react";
 export const useLongPress = (callback, ms = 500) => {
   const [startLongPress, setStartLongPress] = useState(false);
   const timerRef = useRef();
+  const eventRef = useRef(); // To store the event for the callback
 
   useEffect(() => {
     if (startLongPress) {
-      timerRef.current = setTimeout(callback, ms);
+      timerRef.current = setTimeout(() => {
+        if (eventRef.current) callback(eventRef.current);
+      }, ms);
     } else {
       clearTimeout(timerRef.current);
     }
@@ -16,10 +19,16 @@ export const useLongPress = (callback, ms = 500) => {
   }, [startLongPress, callback, ms]);
 
   return {
-    onMouseDown: () => setStartLongPress(true),
+    onMouseDown: (e) => { eventRef.current = e; setStartLongPress(true); },
     onMouseUp: () => setStartLongPress(false),
     onMouseLeave: () => setStartLongPress(false),
-    onTouchStart: () => setStartLongPress(true),
+    onTouchStart: (e) => { eventRef.current = e; setStartLongPress(true); },
     onTouchEnd: () => setStartLongPress(false),
+    // CRITICAL: This stops the browser menu from opening
+    onContextMenu: (e) => {
+      if ('ontouchstart' in window) {
+        e.preventDefault(); 
+      }
+    }
   };
 };

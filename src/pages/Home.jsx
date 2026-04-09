@@ -621,7 +621,7 @@ const Home = () => {
         <div
           key={i}
           {...folderLongPress}
-          className={`group relative flex flex-col justify-center items-center px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 w-[140px] h-fit
+          className={`disable-browser-behavior group relative flex flex-col justify-center items-center px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 w-[140px] h-fit
             ${isSelected 
               ? 'bg-blue-50 ring-2 ring-blue-500 shadow-lg scale-105' 
               : 'bg-white hover:bg-gray-50 hover:shadow-md border border-gray-200 hover:border-gray-300'
