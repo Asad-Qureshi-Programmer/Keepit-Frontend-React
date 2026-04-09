@@ -93,13 +93,7 @@ const Home = () => {
 
   const isMobile = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-  const folderLongPress = useLongPress((e) => {
-  if (isMobile()) handleCheckedFolders(e, folder);
-});
 
-  const fileLongPress = useLongPress((e) => {
-  if (isMobile()) handleCheckedFiles(e, file);
-});
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -617,6 +611,10 @@ const Home = () => {
     folders.map((folder, i) => {
       const isSelected = checkedFolders.includes(folder);
      
+        const folderLongPress = useLongPress((e) => {
+  if (isMobile()) handleCheckedFolders(e, folder);
+});
+
       return (
         <div
           key={i}
@@ -769,11 +767,15 @@ const Home = () => {
            
 
 {!filesError && files.length > 0 && displayFiles?.length>0 ? (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+  <div className="disable-browser-behavior grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
     {displayFiles.map((file, i) => {
       let filename = file.originalname + "." + file.path.split(".").pop();
       const isSelected = checkedFiles.some(f=>f._id===file._id);
       
+      
+  const fileLongPress = useLongPress((e) => {
+  if (isMobile()) handleCheckedFiles(e, file);
+});
       return (
         <React.Fragment key={file.path}>
           <div
