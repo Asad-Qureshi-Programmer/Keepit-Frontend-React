@@ -14,7 +14,6 @@ import { IoClose,IoCheckmark, IoShareSocialOutline, IoCopy } from 'react-icons/i
 import { FaShareAlt } from "react-icons/fa";
 import { useSearch } from "../contexts/SearchContext";
 import {getMatchScore}  from "../utils/searchUtils";
-import { useLongPress } from "../hooks/useLongPress";
 
 export const handleDownloadFile = async (fileId, filename, filepath, e) => {
     e.stopPropagation();
@@ -90,6 +89,7 @@ const Home = () => {
   const [showFullView, setShowFullView] = useState({});
   const navigate = useNavigate();
    const fileInput = useRef(null)
+    const pressTimer = useRef(null);
 
   const isMobile = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -321,6 +321,38 @@ const Home = () => {
 
   console.log("Files display: ", displayFiles)
   console.log("CHECKED FILES: ", checkedFiles)
+
+
+ 
+
+const handleTouchStart = (e, item, isFile) => {
+  // Prevent context menu/text selection while holding
+  pressTimer.current = setTimeout(() => {
+    if (isFile) {
+      handleCheckedFiles(e, item);
+    } else {
+      handleCheckedFolders(e, item);
+    }
+    // Optional: Small vibration for feedback
+    if (navigator.vibrate) navigator.vibrate(50);
+    
+    pressTimer.current = null; // Clear timer so handleTouchEnd knows it was a long press
+  }, 500); // 500ms for long press
+};
+
+const handleTouchEnd = (e, item, isFile) => {
+  if (pressTimer.current) {
+    // If the timer is still running, user lifted finger quickly -> it's a CLICK
+    clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+
+    if (isFile) {
+      setShowFullView((prev) => ({ ...prev, [item.path]: true }));
+    } else {
+      navigate(`folder/${item._id}`, { state: item });
+    }
+  }
+};
 
   return (
     <>
@@ -610,29 +642,25 @@ const Home = () => {
   {!foldersError && folders.length > 0 &&
     folders.map((folder, i) => {
       const isSelected = checkedFolders.includes(folder);
-     
-        const folderLongPress = useLongPress((e) => {
-  if (isMobile()) handleCheckedFolders(e, folder);
-});
+ 
 
       return (
         <div
           key={i}
-          {...folderLongPress}
           className={`disable-browser-behavior group relative flex flex-col justify-center items-center px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 w-[140px] h-fit
             ${isSelected 
               ? 'bg-blue-50 ring-2 ring-blue-500 shadow-lg scale-105' 
               : 'bg-white hover:bg-gray-50 hover:shadow-md border border-gray-200 hover:border-gray-300'
             }`}
+
+            onTouchStart={(e) => handleTouchStart(e, folder, false)}
+            onTouchEnd={(e) => handleTouchEnd(e, folder, false)}
+            onContextMenu={(e) => e.preventDefault()} // Stops browser menu
+
           onClick={(e) => {
-            if (isMobile()) {
-        // Mobile: Single click opens
-        navigate(`folder/${folder._id}`, { state: folder });
-      } else {
-        // Desktop: Single click selects
-        handleCheckedFolders(e, folder);
-      }
-          }}
+    if (!isMobile()) handleCheckedFolders(e, folder);
+  }}
+          
           onDoubleClick={() => {
       if (!isMobile()) {
         // Desktop: Double click opens
@@ -773,32 +801,20 @@ const Home = () => {
       const isSelected = checkedFiles.some(f=>f._id===file._id);
       
       
-  const fileLongPress = useLongPress((e) => {
-  if (isMobile()) handleCheckedFiles(e, file);
-});
       return (
         <React.Fragment key={file.path}>
           <div
-          {...fileLongPress}
-            onDoubleClick={() => {
-                  if (!isMobile()){
-                    setShowFullView((prev) => ({
-                      ...prev,
-                      [file.path]: true,
-                    }))
-                  }
-                }}
+
+            onTouchStart={(e) => handleTouchStart(e, file, true)}
+  onTouchEnd={(e) => handleTouchEnd(e, file, true)}
+  onContextMenu={(e) => e.preventDefault()}
+
             onClick={(e) => {
-                if (isMobile()) {
-                  setShowFullView((prev) => ({
-                          ...prev,
-                          [file.path]: true,
-                        }))
-                } else {
-                  handleCheckedFiles(e, file);
-                }
-              }
-            }
+    if (!isMobile()) handleCheckedFiles(e, file);
+  }}
+  onDoubleClick={() => {
+    if (!isMobile()) setShowFullView(prev => ({ ...prev, [file.path]: true }));
+  }}
             className={`group relative rounded-xl border-2 transition-all duration-200 cursor-pointer h-fit w-[250px] overflow-hidden
               ${isSelected 
                 ? 'border-blue-500 bg-blue-50 shadow-lg scale-[1.02]' 
